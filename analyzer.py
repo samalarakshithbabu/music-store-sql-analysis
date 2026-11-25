@@ -17,7 +17,19 @@ from sqlalchemy import create_engine, text
 import numpy as np
 
 # Configuration
-DATABASE_URL = "mysql+pymysql://root:password@localhost:3306/MUSIC_STORE"
+import os
+from urllib.parse import quote_plus
+
+DB_USER = os.environ.get("DB_USER")
+DB_PASSWORD = os.environ.get("DB_PASSWORD")
+DB_HOST = os.environ.get("DB_HOST", "localhost")
+DB_PORT = os.environ.get("DB_PORT", "3306")
+DB_NAME = os.environ.get("DB_NAME", "MUSIC_STORE")
+
+if not DB_USER or not DB_PASSWORD:
+    raise RuntimeError("DB_USER and DB_PASSWORD environment variables are required")
+
+DATABASE_URL = f"mysql+pymysql://{quote_plus(DB_USER)}:{quote_plus(DB_PASSWORD)}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 DATA_DIR = Path(__file__).parent / "DATA"
 OUTPUT_DIR = Path(__file__).parent / "results"
 CHARTS_DIR = Path(__file__).parent / "charts"
@@ -107,7 +119,8 @@ def analyze_rfm(engine):
 
 def analyze_churn(engine, days_threshold=180):
     """Detect churned and at-risk customers."""
-    query = f"""
+    days_threshold = int(days_threshold)  # validate input is integer
+    query = text("""
     WITH last_purchase AS (
         SELECT 
             c.customer_id,
@@ -125,14 +138,16 @@ def analyze_churn(engine, days_threshold=180):
         customer_id, first_name, last_name, email,
         last_purchase_date, days_since_last, total_spent,
         CASE 
-            WHEN days_since_last > {days_threshold} THEN 'Churned'
+            WHEN days_since_last > :threshold THEN 'Churned'
             WHEN days_since_last > 90 THEN 'At-Risk'
             ELSE 'Active'
         END AS churn_status
     FROM last_purchase
     ORDER BY days_since_last DESC
-    """
-    return execute_query(engine, 'churn', query)
+    """)
+    with engine.connect() as conn:
+        df = pd.read_sql(query, conn, params={"threshold": days_threshold})
+    return df
 
 
 def analyze_mom_growth(engine):
@@ -464,7 +479,8 @@ def main():
     args = parser.parse_args()
 
     global DATABASE_URL
-    DATABASE_URL = f"mysql+pymysql://root:password@{args.host}:3306/{args.database}"
+
+    DATABASE_URL = f"mysql+pymysql://{quote_plus(DB_USER)}:{quote_plus(DB_PASSWORD)}@{args.host}:{DB_PORT}/{args.database}"
 
     try:
         engine = create_engine(DATABASE_URL)
