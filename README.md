@@ -1,5 +1,17 @@
 # Music Store SQL Analysis: Sales, RFM Segmentation, Churn & Time-Series Trends
 
+<div align="center">
+
+![MySQL](https://img.shields.io/badge/MySQL-8.0-4479A1?style=flat-square&logo=mysql)
+![Python](https://img.shields.io/badge/Python-3.x-3776AB?style=flat-square&logo=python)
+![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-2.x-CA4245?style=flat-square&logo=sqlalchemy)
+![Pandas](https://img.shields.io/badge/Pandas-150458?style=flat-square&logo=pandas)
+![Matplotlib](https://img.shields.io/badge/Matplotlib-00326A?style=flat-square&logo=matplotlib)
+![RFM](https://img.shields.io/badge/Analysis-RFM_Segmentation-FF6B6B?style=flat-square)
+![License](https://img.shields.io/badge/License-MIT-yellow?style=flat-square)
+
+</div>
+
 An SQL-based exploratory data analysis project using a relational music-store database. The project explores sales performance, customer behavior, RFM segmentation, churn risk, and purchasing trends to support data-driven business decisions.
 
 ---
@@ -48,6 +60,56 @@ The database contains 11 related tables:
 - Strategic indexes on high-cardinality columns
 - EXPLAIN analysis before/after optimization
 - Query performance benchmarks
+
+## System Architecture
+
+```mermaid
+erDiagram
+    CUSTOMER ||--o{ INVOICE : places
+    EMPLOYEE ||--o{ INVOICE : handles
+    INVOICE ||--|{ INVOICE_LINE : contains
+    ALBUM ||--|{ TRACK : contains
+    ARTIST ||--|{ ALBUM : creates
+    TRACK ||--o{ PLAYLIST_TRACK : appears_in
+    PLAYLIST ||--|{ PLAYLIST_TRACK : has
+    GENRE ||--o{ TRACK : categorizes
+    MEDIA_TYPE ||--o{ TRACK : formats
+
+    CUSTOMER {
+        int customer_id PK
+        string first_name
+        string last_name
+        string email
+        string country
+    }
+    INVOICE {
+        int invoice_id PK
+        int customer_id FK
+        date invoice_date
+        decimal total
+    }
+    TRACK {
+        int track_id PK
+        int album_id FK
+        int genre_id FK
+        int media_type_id FK
+        string name
+        int milliseconds
+        decimal unit_price
+    }
+```
+
+---
+
+## Database Schema
+
+The database contains 11 related tables:
+- **Artist**, **Album**, **Track**, **Genre**, **MediaType** - Catalog hierarchy
+- **Playlist**, **PlaylistTrack** - User collections
+- **Customer**, **Employee** - People dimension
+- **Invoice**, **InvoiceLine** - Transactional facts
+
+---
 
 ## SQL Queries Implemented
 
